@@ -2,7 +2,6 @@
   "name": "Varta Pulse Neo",
   "content_in_root": false,
   "country": ["DE"],
-  "domains": ["varta_pulse_neo"],
   "homeassistant": "2026.3.0",
   "render_readme": true
 }
