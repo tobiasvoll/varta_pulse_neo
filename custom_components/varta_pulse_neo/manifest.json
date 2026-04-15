@@ -2,8 +2,9 @@
   "domain": "varta_pulse_neo",
   "name": "Varta Pulse Neo",
   "version": "1.0.0",
-  "documentation": "https://github.com/custom-components/varta_pulse_neo",
-  "codeowners": ["@github-copilot"],
+  "documentation": "https://github.com/tobiasvoll/varta_pulse_neo",
+  "issue_tracker": "https://github.com/tobiasvoll/varta_pulse_neo/issues",
+  "codeowners": ["@tobiasvoll"],
   "iot_class": "local_polling",
   "config_flow": true
 }
