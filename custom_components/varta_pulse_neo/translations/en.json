@@ -1,6 +1,9 @@
 {
   "title": "Varta Pulse Neo",
   "config": {
+    "error": {
+      "cannot_connect": "Cannot connect to the Varta Pulse Neo. Check host, port, and slave ID."
+    },
     "step": {
       "user": {
         "title": "Varta Pulse Neo",
@@ -13,8 +16,5 @@
         }
       }
     }
-  },
-  "error": {
-    "cannot_connect": "Cannot connect to the Varta Pulse Neo. Check host, port, and slave ID."
   }
 }
