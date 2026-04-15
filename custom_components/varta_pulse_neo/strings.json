@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Varta Pulse Neo",
+        "description": "Configure your Varta Pulse Neo via Modbus TCP.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "slave_id": "Slave ID",
+          "name": "Name"
+        }
+      }
+    }
+  },
+  "abort": {
+    "cannot_connect": "Cannot connect to the Varta Pulse Neo. Check host, port, and slave ID."
+  }
+}

@@ -1,0 +1,98 @@
+- name: mb_varta
+  type: tcp
+  host: 192.168.178.29
+  port: 502
+  delay: 1
+  timeout: 3
+  retries: 3
+  retry_on_empty: true
+  message_wait_milliseconds: 250
+  sensors:
+    - name: mb_varta_EMS
+      slave: 1
+      address: 1000
+      count: 17
+      data_type: string
+      precision: 0
+      scale: 1
+    - name: mb_varta_ENS
+      slave: 1
+      address: 1017
+      count: 17
+      data_type: string
+      precision: 0
+      scale: 1
+    - name: mb_varta_software
+      slave: 1
+      address: 1034
+      count: 17
+      data_type: string
+      precision: 0
+      scale: 1
+    - name: mb_varta_table_version
+      slave: 1
+      address: 1051
+      data_type: uint16
+      precision: 0
+      scale: 1
+    - name: mb_varta_serial
+      slave: 1
+      address: 1054
+      count: 10
+      data_type: string
+      precision: 0
+      scale: 1
+    - name: mb_varta_installed_batteries
+      slave: 1
+      address: 1064
+      data_type: uint16
+      precision: 0
+      scale: 1
+    - name: mb_varta_state
+      slave: 1
+      address: 1065
+      data_type: uint16
+      precision: 0
+      scale: 1
+      unit_of_measurement: State
+    - name: mb_varta_active_power
+      slave: 1
+      address: 1066
+      data_type: int16
+      precision: 0
+      scale: 1
+      device_class: power
+      unit_of_measurement: W
+    - name: mb_varta_apparent_power
+      slave: 1
+      address: 1067
+      data_type: int16
+      precision: 0
+      scale: 1
+      device_class: apparent_power
+      unit_of_measurement: VA
+    - name: mb_varta_SOC
+      unique_id: mb_varta_soc
+      slave: 1
+      address: 1068
+      data_type: uint16
+      precision: 0
+      scale: 1
+      device_class: battery
+      unit_of_measurement: '%'
+    - name: mb_varta_capacity
+      slave: 1
+      address: 1071
+      data_type: uint16
+      precision: 0
+      scale: 10
+      device_class: energy
+      unit_of_measurement: Wh
+    - name: mb_varta_grid_power
+      slave: 1
+      address: 1078
+      data_type: int16
+      precision: 0
+      scale: 1
+      device_class: power
+      unit_of_measurement: W

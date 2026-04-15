@@ -1,0 +1,11 @@
+{
+  "title": "Varta Pulse Neo",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Varta Pulse Neo",
+        "description": "Connect to a Varta Pulse Neo battery using Modbus TCP."
+      }
+    }
+  }
+}
