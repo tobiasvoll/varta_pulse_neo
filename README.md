@@ -42,7 +42,6 @@ The manufacturer documentation recommends Modbus unit ID `255`.
 ## Notes
 
 - Communication is local only (`iot_class: local_polling`).
-- Sensor names are intentionally fixed in English.
 - The integration uses block reads and applies internal scale factors where required.
 
 ## Support
