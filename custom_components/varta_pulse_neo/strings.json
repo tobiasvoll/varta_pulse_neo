@@ -13,7 +13,7 @@
       }
     }
   },
-  "abort": {
+  "error": {
     "cannot_connect": "Cannot connect to the Varta Pulse Neo. Check host, port, and slave ID."
   }
 }
