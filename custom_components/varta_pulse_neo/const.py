@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import timedelta
 
-from homeassistant.components.sensor import SensorEntityDescription
+from homeassistant.components.sensor import SensorEntityDescription, SensorStateClass
 from homeassistant.const import PERCENTAGE
 from homeassistant.helpers.entity import EntityCategory
 
@@ -115,6 +115,7 @@ SENSOR_TYPES = (
         derived_mode="positive",
         native_unit_of_measurement="W",
         device_class="power",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     VartaSensorEntityDescription(
         key="active_power_discharge",
@@ -123,6 +124,7 @@ SENSOR_TYPES = (
         derived_mode="negative_abs",
         native_unit_of_measurement="W",
         device_class="power",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     VartaSensorEntityDescription(
         key="apparent_power_charge",
@@ -175,6 +177,7 @@ SENSOR_TYPES = (
         derived_mode="positive",
         native_unit_of_measurement="W",
         device_class="power",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     VartaSensorEntityDescription(
         key="grid_power_consumption",
@@ -183,6 +186,7 @@ SENSOR_TYPES = (
         derived_mode="negative_abs",
         native_unit_of_measurement="W",
         device_class="power",
+        state_class=SensorStateClass.MEASUREMENT,
     ),
     VartaSensorEntityDescription(
         key="grid_frequency",
@@ -252,3 +256,6 @@ READ_BLOCKS = (
     (1102, 1),
     (2066, 21),
 )
+
+
+
