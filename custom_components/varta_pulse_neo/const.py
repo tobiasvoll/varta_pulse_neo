@@ -149,6 +149,7 @@ SENSOR_TYPES = (
         data_type="uint16",
         native_unit_of_measurement=PERCENTAGE,
         device_class="battery",
+        state_class=SensorStateClass.MEASUREMENT
     ),
     VartaSensorEntityDescription(
         key="energy_counter_ac_to_dc",
