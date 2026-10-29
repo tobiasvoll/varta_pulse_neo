@@ -1,10 +1,19 @@
 {
   "domain": "varta_pulse_neo",
   "name": "Varta Pulse Neo",
-  "codeowners": ["@tobiasvoll"],
+  "codeowners": [
+    "@tobiasvoll"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/tobiasvoll/varta_pulse_neo",
+  "integration_type": "device",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/tobiasvoll/varta_pulse_neo/issues",
-  "version": "1.0.0"
+  "loggers": [
+    "pymodbus"
+  ],
+  "requirements": [
+    "pymodbus>=3.11.2"
+  ],
+  "version": "1.1.0"
 }
