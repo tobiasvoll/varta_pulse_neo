@@ -24,16 +24,19 @@ async def test_decode(fake_client) -> None:
     assert data.grid_frequency == 50.02
     assert data.usable_charge_energy == 5809
     assert data.pv_power == 0
+    assert data.error_code == 0
+    assert data.device_time is not None
+    assert int(data.device_time.timestamp()) == 27363 * 65536 + 8823
 
 
 async def test_one_request_per_block(fake_client) -> None:
     client = VartaClient("1.2.3.4", 502, 255)
     await client.async_get_data()
-    assert fake_client.requests == [(2066, 21), (1064, 24), (1102, 1)]
+    assert fake_client.requests == [(2066, 21), (1064, 24), (1102, 1), (1052, 2)]
     fake_client.requests.clear()
     await client.async_get_data()
     # Scale factors are cached.
-    assert fake_client.requests == [(1064, 24), (1102, 1)]
+    assert fake_client.requests == [(1064, 24), (1102, 1), (1052, 2)]
 
 
 async def test_fallback_to_documented_blocks(fake_client) -> None:
@@ -47,18 +50,20 @@ async def test_fallback_to_documented_blocks(fake_client) -> None:
     fake_client.requests.clear()
     await client.async_get_data()
     # The fallback is remembered, the big block is not tried again.
-    assert fake_client.requests == [(1064, 8), (1078, 1), (1082, 6), (1102, 1)]
+    assert fake_client.requests == [(1064, 8), (1078, 1), (1082, 6), (1102, 1), (1052, 2)]
 
 
 async def test_optional_registers_missing(fake_client) -> None:
     """Older pulse neo firmware does not provide 1082-1087 and 1102."""
     fake_client.strict = True
-    fake_client.refused |= (set(range(1072, 1088)) - {1078}) | {1102}
+    fake_client.refused |= (set(range(1072, 1088)) - {1078}) | {1102, 1052}
     client = VartaClient("1.2.3.4", 502, 255)
     data = await client.async_get_data()
     assert data.soc == 42
     assert data.grid_frequency is None
     assert data.pv_power is None
+    assert data.error_code is None
+    assert data.device_time is None
     fake_client.requests.clear()
     await client.async_get_data()
     assert fake_client.requests == [(1064, 8), (1078, 1)]

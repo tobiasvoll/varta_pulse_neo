@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Generator
 from unittest.mock import MagicMock, patch
 
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_PORT
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
@@ -111,6 +111,6 @@ def config_entry() -> MockConfigEntry:
     return MockConfigEntry(
         domain=DOMAIN,
         title="Varta Pulse Neo",
-        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_SLAVE_ID: 255, CONF_NAME: "Varta Pulse Neo"},
+        data={CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_SLAVE_ID: 255},
         unique_id="123456789",
     )

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 import logging
 import time
 
@@ -27,6 +28,7 @@ STATIC_BLOCK = (1000, 64)  # software versions, table version, timestamp, serial
 LIVE_BLOCK = (1064, 24)
 LIVE_FALLBACK = ((1064, 8, False), (1078, 1, False), (1082, 6, True))
 PV_BLOCK = (1102, 1)
+TIME_BLOCK = (1052, 2)  # device clock, lower word first
 SF_BLOCK = (2066, 21)
 SF_FALLBACK = ((2066, 2, False), (2069, 1, False), (2071, 1, False), (2078, 1, False), (2083, 4, True))
 
@@ -84,6 +86,8 @@ class VartaData:
     usable_discharge_energy: float | None = None
     reactive_power: float | None = None
     pv_power: float | None = None
+    error_code: int | None = None  # undocumented register 1072
+    device_time: datetime | None = None
     raw: dict[int, int] = field(default_factory=dict)
 
 
@@ -181,6 +185,11 @@ class VartaClient:
                     regs.update(enumerate(await self._read(*PV_BLOCK), PV_BLOCK[0]))
                 except VartaRefused:
                     self._skip.add(PV_BLOCK[0])
+            if TIME_BLOCK[0] not in self._skip:
+                try:
+                    regs.update(enumerate(await self._read(*TIME_BLOCK), TIME_BLOCK[0]))
+                except VartaRefused:
+                    self._skip.add(TIME_BLOCK[0])
         return self._decode(regs, self._scale_factors)
 
     def invalidate_scale_factors(self) -> None:
@@ -221,4 +230,7 @@ class VartaClient:
             data.reactive_power = float(to_int16(v))
         if (v := get(1102)) is not None:
             data.pv_power = float(v)
+        data.error_code = get(1072)
+        if (low := get(1052)) is not None and (high := get(1053)) is not None and (high or low):
+            data.device_time = datetime.fromtimestamp((high << 16) | low, UTC)
         return data

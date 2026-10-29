@@ -27,8 +27,8 @@ in v13.4. "Code" is whether the integration reads the register today.
 | 1017 | Software version ENS | STRING17 | | R | ✔ | ✓ | |
 | 1034 | Software version inverter | STRING17 | | R | ✔ | ✓ | |
 | 1051 | Table version | UINT16 | | R | ✔ | ✓ | 13 for this document |
-| 1052 | Timestamp, lower word | UINT16 | | R | ✔ | – | 32-bit Unix timestamp |
-| 1053 | Timestamp, higher word | UINT16 | | R | ✔ | – | |
+| 1052 | Timestamp, lower word | UINT16 | | R | ✔ | ✓ | 32-bit Unix timestamp |
+| 1053 | Timestamp, higher word | UINT16 | | R | ✔ | ✓ | |
 | 1054 | Serial number | STRING10 | | R | ✔ | ✓ | 9 digits |
 | 1064 | Installed battery modules | UINT16 | | R | ✔ | ✓ | |
 | 1065 | State | UINT16 | | R | ✔ | ✓ | 0 Busy, 1 Run, 2 Charge, 3 Discharge, 4 Standby, 5 Error, 6 Passive (service), 7 Islanding |
@@ -62,7 +62,7 @@ The scale factor registers are writable. The integration must never write them.
 
 | Addr | Name | Type | Access | Notes |
 |---|---|---|---|---|
-| 1072 | Error code | UINT16 | R | used by vartastorage |
+| 1072 | Error code | UINT16 | R | used by vartastorage; exposed as a diagnostic sensor |
 | 1073 | Control timer | SINT16 | R | set to 120 after a write to 1074/1075, counts down in seconds |
 | 1074 | Max discharge power | SINT16 W | WR | default −4000, 0 blocks discharge |
 | 1075 | Max charge power | SINT16 W | WR | default 4000, 0 blocks charge |

@@ -13,8 +13,7 @@
         "data": {
           "host": "Host",
           "port": "Port",
-          "slave_id": "Modbus unit ID",
-          "name": "Name"
+          "slave_id": "Modbus unit ID"
         },
         "data_description": {
           "host": "IP address or hostname of the storage system.",
@@ -31,11 +30,11 @@
       "available_discharge_power": {
         "name": "Available AC discharging power"
       },
+      "battery_power": {
+        "name": "Battery power"
+      },
       "capacity": {
         "name": "Installed capacity"
-      },
-      "charge_apparent_power": {
-        "name": "Charge apparent power"
       },
       "charge_power": {
         "name": "Charge power"
@@ -43,8 +42,8 @@
       "charged_energy": {
         "name": "Charged energy"
       },
-      "discharge_apparent_power": {
-        "name": "Discharge apparent power"
+      "device_time": {
+        "name": "Device time"
       },
       "discharge_power": {
         "name": "Discharge power"
@@ -57,6 +56,9 @@
       },
       "ens_version": {
         "name": "ENS software version"
+      },
+      "error_code": {
+        "name": "Error code"
       },
       "grid_consumption": {
         "name": "Grid consumption"

@@ -18,9 +18,10 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 | --- | --- | --- |
 | State | | Busy, Ready, Charging, Discharging, Standby, Error, Passive (service), Islanding |
 | Battery | % | State of charge |
-| Charge power / Discharge power | W | Split from the signed battery power (register 1066) |
+| Battery power | W | Signed battery power (register 1066): positive while charging, negative while discharging |
+| Charge power / Discharge power | W | Split from the signed battery power |
 | Grid feed-in / Grid consumption | W | Split from the signed grid power (register 1078) |
-| Charged energy | kWh | Device counter, `total_increasing`, use it as "Energy going in to the battery" |
+| Charged energy | kWh | Device counter, `total_increasing`, use it as "Energy going in to the battery", see below |
 | Discharged energy | kWh | Integrated by Home Assistant from the discharge power, use it as "Energy coming out of the battery", see below |
 | Installed capacity, Usable energy for charging / discharging | kWh | |
 | Available AC charging / discharging power | W | |
@@ -28,7 +29,17 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 | PV sensor power | W | Only meaningful with a VARTA PV sensor |
 | Installed battery modules | | |
 | EMS, ENS and inverter software versions | | Diagnostic |
-| Charge/discharge apparent power, reactive power, Modbus table version, serial number | | Disabled by default |
+| Error code | | Diagnostic; undocumented register 1072, the meaning of the codes is not published by VARTA |
+| Apparent power, reactive power, device time, Modbus table version, serial number | | Disabled by default |
+
+### Charged energy
+
+The value comes from the device's own counter. A reading that goes backwards
+(for example 0 while the EMS restarts) or that would mean more than 10 kW of
+charging since the last reading is discarded, so it does not show up as a
+meter reset in the energy statistics. If the device keeps reporting the new
+value for 10 readings in a row (5 minutes), it is accepted, for example after
+the counter was reset by a service technician.
 
 ### Discharged energy
 
@@ -61,11 +72,15 @@ than the real discharged energy.
 The config flow asks for:
 
 - `host`
-- `port`
-- `slave_id`
-- `name`
+- `port` (default `502`)
+- `slave_id`, the Modbus unit ID (default `255`, as recommended by VARTA)
 
-The manufacturer documentation recommends Modbus unit ID `255`.
+The device is named "Varta Pulse Neo"; rename it under `Settings` -> `Devices & services` if you like.
+
+### Upgrading from 1.0
+
+The separate charge and discharge apparent power sensors were replaced by one
+apparent power sensor and are removed automatically.
 
 ## Notes
 
