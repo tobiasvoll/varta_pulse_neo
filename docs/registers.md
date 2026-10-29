@@ -89,6 +89,17 @@ read 1065–1075 every 5 s:
 - The battery was charging with about 460 W, below the 1000 W limit, so this
   run did not show whether the limit takes effect.
 
+Second run, 1075 = 200 only: accepted, but the timer stayed at 0 and the value
+was **not** reset (it still read 200 minutes later). Charging continued at
+460–635 W. Writing 1075 alone does not start the watchdog.
+
+Third run, 1074 = −2500 then 1075 = 200: the timer started, both values were
+reset at 0 as before, but charging stayed at 500–640 W the whole time. **The
+charge limit has no visible effect** on this device (EMS 2.60.6). The discharge
+limit (1074 = 0 blocks discharging, used by evcc) could not be checked because
+the battery was charging during all runs. Writing the defaults back
+(−32768/−1) restarts the timer harmlessly.
+
 ## Differences between v13.1 and v13.4
 
 - Registers 1082–1087 and 1102 were marked "pulse only" in v13.1 and are
