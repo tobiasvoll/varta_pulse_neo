@@ -1,7 +1,9 @@
 {
   "config": {
     "abort": {
-      "already_configured": "This storage system is already configured."
+      "already_configured": "This storage system is already configured.",
+      "reconfigure_successful": "The connection settings were updated.",
+      "wrong_device": "A different storage system (another serial number) answers at this address."
     },
     "error": {
       "cannot_connect": "Cannot connect to the storage system. Check host, port and unit ID, and that Modbus TCP is enabled."
@@ -13,8 +15,20 @@
         "data": {
           "host": "Host",
           "port": "Port",
-          "slave_id": "Modbus unit ID",
-          "name": "Name"
+          "slave_id": "Modbus unit ID"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the storage system.",
+          "slave_id": "VARTA recommends unit ID 255."
+        }
+      },
+      "reconfigure": {
+        "title": "VARTA storage system",
+        "description": "Change the connection settings, for example after the storage system got a new IP address.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "slave_id": "Modbus unit ID"
         },
         "data_description": {
           "host": "IP address or hostname of the storage system.",
@@ -31,11 +45,11 @@
       "available_discharge_power": {
         "name": "Available AC discharging power"
       },
+      "battery_power": {
+        "name": "Battery power"
+      },
       "capacity": {
         "name": "Installed capacity"
-      },
-      "charge_apparent_power": {
-        "name": "Charge apparent power"
       },
       "charge_power": {
         "name": "Charge power"
@@ -43,8 +57,8 @@
       "charged_energy": {
         "name": "Charged energy"
       },
-      "discharge_apparent_power": {
-        "name": "Discharge apparent power"
+      "device_time": {
+        "name": "Device time"
       },
       "discharge_power": {
         "name": "Discharge power"
@@ -57,6 +71,9 @@
       },
       "ens_version": {
         "name": "ENS software version"
+      },
+      "error_code": {
+        "name": "Error code"
       },
       "grid_consumption": {
         "name": "Grid consumption"

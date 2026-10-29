@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
+import logging
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -15,6 +16,7 @@ from homeassistant.const import (
     CONF_HOST,
     PERCENTAGE,
     EntityCategory,
+    Platform,
     UnitOfApparentPower,
     UnitOfEnergy,
     UnitOfFrequency,
@@ -22,17 +24,26 @@ from homeassistant.const import (
     UnitOfReactivePower,
 )
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .api import STATES, VartaData, VartaDeviceInfo
-from .const import CONF_SLAVE_ID, DOMAIN
+from .const import DOMAIN
 from .coordinator import VartaConfigEntry, VartaCoordinator
+
+_LOGGER = logging.getLogger(__name__)
 
 # Gaps longer than this (e.g. while the device was unreachable) are not integrated.
 MAX_INTEGRATION_GAP = 300
+# Readings of the charge counter that imply more than this power are discarded.
+MAX_CHARGE_POWER = 10000  # W
+COUNTER_TOLERANCE = 10  # Wh
+# A discarded reading is accepted as the new counter value when this many
+# consecutive readings agree with it (e.g. after the counter was reset).
+COUNTER_REBASE_READINGS = 10
 
 
 def _positive(value: float | None) -> float | None:
@@ -45,7 +56,7 @@ def _negative_abs(value: float | None) -> float | None:
 
 @dataclass(frozen=True, kw_only=True)
 class VartaSensorEntityDescription(SensorEntityDescription):
-    value_fn: Callable[[VartaData], float | int | str | None]
+    value_fn: Callable[[VartaData], float | int | str | datetime | None]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -63,12 +74,6 @@ STORED_ENERGY = {
     "suggested_unit_of_measurement": UnitOfEnergy.KILO_WATT_HOUR,
     "device_class": SensorDeviceClass.ENERGY_STORAGE,
     "state_class": SensorStateClass.MEASUREMENT,
-}
-APPARENT_POWER = {
-    "native_unit_of_measurement": UnitOfApparentPower.VOLT_AMPERE,
-    "device_class": SensorDeviceClass.APPARENT_POWER,
-    "state_class": SensorStateClass.MEASUREMENT,
-    "entity_registry_enabled_default": False,
 }
 
 # Keys are part of the unique ids and must not change.
@@ -100,16 +105,19 @@ SENSORS: tuple[VartaSensorEntityDescription, ...] = (
         **POWER,
     ),
     VartaSensorEntityDescription(
-        key="apparent_power_charge",
-        translation_key="charge_apparent_power",
-        value_fn=lambda d: _positive(d.apparent_power),
-        **APPARENT_POWER,
+        key="active_power",
+        translation_key="battery_power",
+        value_fn=lambda d: d.active_power,
+        **POWER,
     ),
     VartaSensorEntityDescription(
-        key="apparent_power_discharge",
-        translation_key="discharge_apparent_power",
-        value_fn=lambda d: _negative_abs(d.apparent_power),
-        **APPARENT_POWER,
+        key="apparent_power",
+        native_unit_of_measurement=UnitOfApparentPower.VOLT_AMPERE,
+        device_class=SensorDeviceClass.APPARENT_POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        entity_registry_enabled_default=False,
+        # VARTA signs it like the active power; apparent power is a magnitude.
+        value_fn=lambda d: None if d.apparent_power is None else abs(d.apparent_power),
     ),
     VartaSensorEntityDescription(
         key="grid_power_backfeed",
@@ -122,15 +130,6 @@ SENSORS: tuple[VartaSensorEntityDescription, ...] = (
         translation_key="grid_consumption",
         value_fn=lambda d: _negative_abs(d.grid_power),
         **POWER,
-    ),
-    VartaSensorEntityDescription(
-        key="energy_counter_ac_to_dc",
-        translation_key="charged_energy",
-        native_unit_of_measurement=UnitOfEnergy.WATT_HOUR,
-        suggested_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        value_fn=lambda d: d.charged_energy,
     ),
     VartaSensorEntityDescription(
         key="capacity",
@@ -189,7 +188,24 @@ SENSORS: tuple[VartaSensorEntityDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: d.modules,
     ),
+    VartaSensorEntityDescription(
+        key="error_code",
+        translation_key="error_code",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=lambda d: d.error_code,
+    ),
+    VartaSensorEntityDescription(
+        key="device_time",
+        translation_key="device_time",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        value_fn=lambda d: d.device_time,
+    ),
 )
+
+# Sensors of earlier versions that no longer exist.
+REMOVED_KEYS = ("apparent_power_charge", "apparent_power_discharge")
 
 INFO_SENSORS: tuple[VartaInfoSensorEntityDescription, ...] = (
     VartaInfoSensorEntityDescription(
@@ -233,8 +249,13 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
+    registry = er.async_get(hass)
+    for key in REMOVED_KEYS:
+        if entity_id := registry.async_get_entity_id(Platform.SENSOR, DOMAIN, f"{entry.entry_id}_{key}"):
+            registry.async_remove(entity_id)
     entities: list[SensorEntity] = [VartaSensor(coordinator, d) for d in SENSORS]
     entities += [VartaInfoSensor(coordinator, d) for d in INFO_SENSORS]
+    entities.append(VartaChargedEnergySensor(coordinator))
     entities.append(VartaDischargedEnergySensor(coordinator))
     async_add_entities(entities)
 
@@ -248,8 +269,7 @@ class VartaEntity(CoordinatorEntity[VartaCoordinator]):
         info = coordinator.device_info
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
-            # Kept from 1.0 so existing installations keep their device.
-            identifiers={(DOMAIN, f"{entry.data[CONF_HOST]}_{entry.data[CONF_SLAVE_ID]}")},
+            identifiers={(DOMAIN, info.serial)},
             name=entry.title,
             manufacturer="VARTA",
             model="pulse neo",
@@ -267,7 +287,7 @@ class VartaSensor(VartaEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> float | int | str | None:
+    def native_value(self) -> float | int | str | datetime | None:
         return self.entity_description.value_fn(self.coordinator.data)
 
 
@@ -281,6 +301,84 @@ class VartaInfoSensor(VartaEntity, SensorEntity):
     @property
     def native_value(self) -> str | int:
         return self.entity_description.value_fn(self.coordinator.device_info)
+
+
+def _plausible(old: float, new: float, seconds: float | None) -> bool:
+    """Whether the charge counter may go from old to new within seconds."""
+    if new < old:
+        return False
+    if seconds is None:
+        return True
+    return new - old <= MAX_CHARGE_POWER * seconds / 3600 + COUNTER_TOLERANCE
+
+
+class VartaChargedEnergySensor(VartaEntity, RestoreSensor):
+    """Charged energy from the device counter (register 1069).
+
+    A single wrong reading, such as 0 while the EMS restarts, would count as a
+    meter reset in the statistics, so readings that go backwards or jump are
+    discarded until enough consecutive readings confirm them.
+    """
+
+    _attr_translation_key = "charged_energy"
+    _attr_native_unit_of_measurement = UnitOfEnergy.WATT_HOUR
+    _attr_suggested_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+    def __init__(self, coordinator: VartaCoordinator) -> None:
+        super().__init__(coordinator, "energy_counter_ac_to_dc")
+        self._last_time: datetime | None = None
+        self._candidate: float | None = None
+        self._candidate_time: datetime | None = None
+        self._candidate_count = 0
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+        if (last := await self.async_get_last_sensor_data()) is not None and isinstance(
+            last.native_value, (int, float)
+        ):
+            self._attr_native_value = float(last.native_value)
+        if self.coordinator.data is not None:
+            self._update(self.coordinator.data.charged_energy)
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        if self.coordinator.last_update_success:
+            self._update(self.coordinator.data.charged_energy)
+        super()._handle_coordinator_update()
+
+    def _update(self, value: float | None) -> None:
+        if value is None:
+            return
+        now = dt_util.utcnow()
+        current = self._attr_native_value
+        if current is None or _plausible(float(current), value, self._seconds_since(self._last_time, now)):
+            self._accept(value, now)
+            return
+        if self._candidate is not None and _plausible(
+            self._candidate, value, self._seconds_since(self._candidate_time, now)
+        ):
+            self._candidate_count += 1
+        else:
+            _LOGGER.debug("Discarding charged energy reading %s Wh (last %s Wh)", value, current)
+            self._candidate_count = 1
+        self._candidate = value
+        self._candidate_time = now
+        if self._candidate_count >= COUNTER_REBASE_READINGS:
+            _LOGGER.warning("Charged energy counter changed from %s Wh to %s Wh, accepting it", current, value)
+            self._accept(value, now)
+
+    def _accept(self, value: float, now: datetime) -> None:
+        self._attr_native_value = value
+        self._last_time = now
+        self._candidate = None
+        self._candidate_time = None
+        self._candidate_count = 0
+
+    @staticmethod
+    def _seconds_since(then: datetime | None, now: datetime) -> float | None:
+        return None if then is None else (now - then).total_seconds()
 
 
 class VartaDischargedEnergySensor(VartaEntity, RestoreSensor):
