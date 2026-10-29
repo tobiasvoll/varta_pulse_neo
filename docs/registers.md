@@ -75,6 +75,31 @@ timer expires (evcc rewrites every 60 s). Reported working on pulse neo 6 and
 element S4/S5, not through a UNIEQ LAN box. VARTA confirmed these registers to
 evcc users but has not published them yet.
 
+### Write test on a pulse neo 6 (2026-10-29)
+
+`tools/varta_control_test.py` wrote 1074 = −1000 and 1075 = 1000 once and then
+read 1065–1075 every 5 s:
+
+- Both writes (function code 6) were accepted without a Modbus exception and
+  read back immediately.
+- 1073 jumped to 119 after the first write, stayed at 119 after the second one
+  (each write restarts it) and counted down one per second.
+- At 0 the device restored 1074 = −32768 and 1075 = −1 on its own, so
+  "no limit" reads as −32768/−1 on this device, not −4000/4000.
+- The battery was charging with about 460 W, below the 1000 W limit, so this
+  run did not show whether the limit takes effect.
+
+Second run, 1075 = 200 only: accepted, but the timer stayed at 0 and the value
+was **not** reset (it still read 200 minutes later). Charging continued at
+460–635 W. Writing 1075 alone does not start the watchdog.
+
+Third run, 1074 = −2500 then 1075 = 200: the timer started, both values were
+reset at 0 as before, but charging stayed at 500–640 W the whole time. **The
+charge limit has no visible effect** on this device (EMS 2.60.6). The discharge
+limit (1074 = 0 blocks discharging, used by evcc) could not be checked because
+the battery was charging during all runs. Writing the defaults back
+(−32768/−1) restarts the timer harmlessly.
+
 ## Differences between v13.1 and v13.4
 
 - Registers 1082–1087 and 1102 were marked "pulse only" in v13.1 and are
@@ -138,7 +163,8 @@ first and last address of a block.
 5. **Apparent power** is split into charge/discharge sensors, which adds little;
    one signed sensor is enough.
 6. **Timestamp (1052/1053)**, **error code (1072)** and the **control registers
-   (1073–1075)** are not exposed.
+   (1073–1075)** are not exposed. Control was dropped for now after the write
+   tests above: the charge limit had no effect, the discharge limit is untested.
 7. Sign conventions of 1066 and 1078, the unit id default 255, the PV sensor at
    1102 and the 30 s poll interval all match the document and the device.
 8. **Control registers need a careful test.** 1074/1075 read −32768/−1 on this
