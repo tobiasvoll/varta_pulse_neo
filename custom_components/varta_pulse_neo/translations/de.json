@@ -1,7 +1,9 @@
 {
   "config": {
     "abort": {
-      "already_configured": "Dieser Speicher ist bereits eingerichtet."
+      "already_configured": "Dieser Speicher ist bereits eingerichtet.",
+      "reconfigure_successful": "Die Verbindungsdaten wurden aktualisiert.",
+      "wrong_device": "Unter dieser Adresse antwortet ein anderer Speicher (andere Seriennummer)."
     },
     "error": {
       "cannot_connect": "Keine Verbindung zum Speicher. Prüfe Host, Port und Unit-ID und ob Modbus TCP aktiviert ist."
@@ -10,6 +12,19 @@
       "user": {
         "title": "VARTA-Speicher",
         "description": "Verbinde deinen VARTA-Speicher über Modbus TCP.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "slave_id": "Modbus-Unit-ID"
+        },
+        "data_description": {
+          "host": "IP-Adresse oder Hostname des Speichers.",
+          "slave_id": "VARTA empfiehlt die Unit-ID 255."
+        }
+      },
+      "reconfigure": {
+        "title": "VARTA-Speicher",
+        "description": "Verbindungsdaten des Speichers ändern, zum Beispiel nach einer neuen IP-Adresse.",
         "data": {
           "host": "Host",
           "port": "Port",

@@ -31,7 +31,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from .api import STATES, VartaData, VartaDeviceInfo
-from .const import CONF_SLAVE_ID, DOMAIN
+from .const import DOMAIN
 from .coordinator import VartaConfigEntry, VartaCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -269,8 +269,7 @@ class VartaEntity(CoordinatorEntity[VartaCoordinator]):
         info = coordinator.device_info
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_device_info = DeviceInfo(
-            # Kept from 1.0 so existing installations keep their device.
-            identifiers={(DOMAIN, f"{entry.data[CONF_HOST]}_{entry.data[CONF_SLAVE_ID]}")},
+            identifiers={(DOMAIN, info.serial)},
             name=entry.title,
             manufacturer="VARTA",
             model="pulse neo",
