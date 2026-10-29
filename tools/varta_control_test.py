@@ -12,7 +12,7 @@ Usage:
     python3 varta_control_test.py 192.168.1.50 --discharge 2500 --charge 200 --restore
 
 --discharge/--charge set each register on its own (1074 is written first).
---restore writes the values read before the test back at the end.
+--restore writes the device defaults (1074 = -32768, 1075 = -1) back at the end.
 
 Stop at any time with Ctrl+C. The result is saved as JSON
 (default: varta_control_test.json). Only the Python standard library is used.
@@ -72,7 +72,7 @@ def main() -> None:
     parser.add_argument("--only", choices=("discharge", "charge"))
     parser.add_argument("--discharge", type=int, help="discharge limit in W, overrides --limit/--only")
     parser.add_argument("--charge", type=int, help="charge limit in W, overrides --limit/--only")
-    parser.add_argument("--restore", action="store_true", help="write the original values back at the end")
+    parser.add_argument("--restore", action="store_true", help="write the device defaults back at the end")
     parser.add_argument("--duration", type=int, default=150, help="seconds to watch after the write")
     parser.add_argument("--output", default="varta_control_test.json")
     args = parser.parse_args()
@@ -122,8 +122,9 @@ def main() -> None:
     except KeyboardInterrupt:
         print("stopped")
     finally:
-        if args.restore and log and "max_charge_1075" in log[0]:
-            original = {1074: log[0]["max_discharge_1074"], 1075: log[0]["max_charge_1075"]}
+        if args.restore:
+            # "No limit" as read on a pulse neo 6 after the timer expired.
+            original = {1074: -32768, 1075: -1}
             for address, _ in writes:
                 try:
                     client.write_single(address, original[address])
