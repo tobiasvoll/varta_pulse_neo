@@ -85,17 +85,46 @@ evcc users but has not published them yet.
 - Flex storage lost ENS/inverter versions and the module count, and gained
   1082–1086.
 
+## Measured on a pulse neo 6 (2026-10-29)
+
+EMS 2.60.6, inverter 1.5.4, table version 13, one battery module, unit id 255.
+Battery at 1 % SoC, state switching between 4 (standby) and 0 (busy).
+
+| Addr | Value | Reading |
+|---|---|---|
+| 1000–1050 | one ASCII char per register | confirms the document; ENS reads "0.0.0." |
+| 1052/1053 | 8823 / 27363 | valid Unix time (lower word first), works |
+| 1069/1070 | 47038 / 23 | 1 554 366 Wh charged in total |
+| 1071 | 586, sometimes 279 | 5860 Wh or 2790 Wh: **not constant** |
+| 1085/1086 | 5809 / 58, then 2763 / 27 | follow 1071 (capacity × (1 − SoC) and × SoC) |
+| 1083/1084 | 2500 / 1557 in standby, 0 / 0 while busy | |
+| 1078 | −106 … −129 | grid consumption, sign as documented |
+| 1082 | 5002–5005 | 50.02 Hz, fixed ×0.01 |
+| 1102 | 0 | no PV sensor installed |
+| 1074 / 1075 | −32768 / −1 | **not** the −4000 / 4000 defaults reported by evcc users |
+| 1073 | 0 | no control timer running |
+| 1090 / 1091 | 2500 / 2500 | undocumented; likely the nominal 2.5 kW charge/discharge power |
+| 1076, 1079–1081, 1088, 1089 | 24980, 38822, 2181, 11876, 278, 1001 | undocumented, meaning unknown |
+| 2066–2086 (documented) | all 0 | no scaling on this device |
+| 2072, 2073, 2076, 2079–2082 | −1 | undocumented; 2082 must **not** be applied to the frequency |
+
+Refused with exception 2 (illegal address): 1092–1099, 1103–1110,
+2000–2065, 2068, 2070, 2087–2099, 2102–2110. A block read that contains 2068
+or 2070 failed, so the integration's current block 2066–2086 is very likely
+refused as a whole.
+
 ## Findings for the current code
 
 1. **Capacity scaling matches the document.** Raw × 10 Wh × 10^SF2071 is what
-   VARTA specifies. It is only wrong if the device reports a non-zero SF in
-   addition to already scaled values; the probe will show this.
-2. **Block reads cover undocumented registers.** The integration reads
-   1000–1087 and 2066–2086 in single blocks, which include undocumented
-   addresses (1072–1081, 2068, 2070, 2072–2077, 2079–2082). If the device
-   refuses any of them, or older firmware refuses 1082–1087, every sensor
-   becomes unavailable. Blocks should follow the documented ranges, with a
-   fallback for optional registers.
+   VARTA specifies, and SF 2071 is 0 on the measured device. The value is not
+   constant though (5860 / 2790 Wh), so it must not be treated as a fixed
+   device property.
+2. **Block reads cover refused registers.** The integration reads 2066–2086 as
+   one block, which contains the refused addresses 2068 and 2070. On the
+   measured device this block is very likely rejected, which makes every
+   sensor unavailable. Older pulse neo firmware may also refuse 1082–1087.
+   Blocks must follow the readable ranges (2066–2067, 2069, 2071–2086 here),
+   with a fallback for optional registers.
 3. **Strings are one character per register.** The current decoder takes two
    bytes per register and drops the null bytes, which gives the right result,
    but it should decode the low byte only.
@@ -106,7 +135,10 @@ evcc users but has not published them yet.
 6. **Timestamp (1052/1053)**, **error code (1072)** and the **control registers
    (1073–1075)** are not exposed.
 7. Sign conventions of 1066 and 1078, the unit id default 255, the PV sensor at
-   1102 and the 30 s poll interval all match the document.
+   1102 and the 30 s poll interval all match the document and the device.
+8. **Control registers need a careful test.** 1074/1075 read −32768/−1 on this
+   device instead of the −4000/4000 reported elsewhere, so their behaviour has
+   to be confirmed with a supervised write before step 3 relies on them.
 
 ## Sources
 
