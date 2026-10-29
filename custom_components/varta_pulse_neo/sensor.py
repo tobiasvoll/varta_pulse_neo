@@ -20,7 +20,6 @@ from homeassistant.const import (
     UnitOfFrequency,
     UnitOfPower,
     UnitOfReactivePower,
-    UnitOfTime,
 )
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import DeviceInfo
@@ -189,15 +188,6 @@ SENSORS: tuple[VartaSensorEntityDescription, ...] = (
         translation_key="installed_batteries",
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d: d.modules,
-    ),
-    VartaSensorEntityDescription(
-        key="control_timer",
-        translation_key="control_timer",
-        native_unit_of_measurement=UnitOfTime.SECONDS,
-        device_class=SensorDeviceClass.DURATION,
-        entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
-        value_fn=lambda d: d.control_timer,
     ),
 )
 

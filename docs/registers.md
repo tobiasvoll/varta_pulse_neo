@@ -162,8 +162,9 @@ first and last address of a block.
    the discharge power inside the integration.
 5. **Apparent power** is split into charge/discharge sensors, which adds little;
    one signed sensor is enough.
-6. **Timestamp (1052/1053)** and **error code (1072)** are not exposed. The
-   control registers 1073–1075 are used from step 3 on (power limit entities).
+6. **Timestamp (1052/1053)**, **error code (1072)** and the **control registers
+   (1073–1075)** are not exposed. Control was dropped for now after the write
+   tests above: the charge limit had no effect, the discharge limit is untested.
 7. Sign conventions of 1066 and 1078, the unit id default 255, the PV sensor at
    1102 and the 30 s poll interval all match the document and the device.
 8. **Control registers need a careful test.** 1074/1075 read −32768/−1 on this

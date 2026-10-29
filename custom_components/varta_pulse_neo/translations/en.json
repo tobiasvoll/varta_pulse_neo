@@ -24,14 +24,6 @@
     }
   },
   "entity": {
-    "number": {
-      "charge_power_limit": {
-        "name": "Max charge power"
-      },
-      "discharge_power_limit": {
-        "name": "Max discharge power"
-      }
-    },
     "sensor": {
       "available_charge_power": {
         "name": "Available AC charging power"
@@ -50,9 +42,6 @@
       },
       "charged_energy": {
         "name": "Charged energy"
-      },
-      "control_timer": {
-        "name": "Power limit timer"
       },
       "discharge_apparent_power": {
         "name": "Discharge apparent power"
