@@ -4,7 +4,7 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 
 ## Features
 
-- Set up from the UI (config flow); the device is identified by its serial number
+- Set up from the UI (config flow); the device is identified by its serial number, so a new IP address only needs a reconfiguration
 - Local polling every 30 seconds over one persistent Modbus TCP connection (pymodbus)
 - Energy dashboard support: charged energy from the device counter, discharged energy integrated from the discharge power
 - Battery state as an enum sensor with translated values
@@ -77,7 +77,17 @@ The config flow asks for:
 
 The device is named "Varta Pulse Neo"; rename it under `Settings` -> `Devices & services` if you like.
 
+### Changing the IP address
+
+If the storage system gets a new IP address, open `Settings` -> `Devices & services` ->
+`Varta Pulse Neo` -> menu -> `Reconfigure` and enter the new host. The integration
+checks the serial number, so the device, its entities and their history stay the same.
+
 ### Upgrading from 1.0
+
+Devices set up with 1.0 were identified by host and unit ID. On the first start
+with 1.1 the integration switches them to the serial number, keeping the device and
+all entities.
 
 The separate charge and discharge apparent power sensors were replaced by one
 apparent power sensor and are removed automatically.

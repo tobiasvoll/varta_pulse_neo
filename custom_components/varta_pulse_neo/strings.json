@@ -1,7 +1,9 @@
 {
   "config": {
     "abort": {
-      "already_configured": "This storage system is already configured."
+      "already_configured": "This storage system is already configured.",
+      "reconfigure_successful": "The connection settings were updated.",
+      "wrong_device": "A different storage system (another serial number) answers at this address."
     },
     "error": {
       "cannot_connect": "Cannot connect to the storage system. Check host, port and unit ID, and that Modbus TCP is enabled."
@@ -10,6 +12,19 @@
       "user": {
         "title": "VARTA storage system",
         "description": "Connect your VARTA storage system via Modbus TCP.",
+        "data": {
+          "host": "Host",
+          "port": "Port",
+          "slave_id": "Modbus unit ID"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the storage system.",
+          "slave_id": "VARTA recommends unit ID 255."
+        }
+      },
+      "reconfigure": {
+        "title": "VARTA storage system",
+        "description": "Change the connection settings, for example after the storage system got a new IP address.",
         "data": {
           "host": "Host",
           "port": "Port",
