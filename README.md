@@ -15,7 +15,7 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 | Entity | Unit | Notes |
 | --- | --- | --- |
 | State | | Busy, Ready, Charging, Discharging, Standby, Error, Passive (service), Islanding |
-| State of charge | % | |
+| Battery | % | State of charge |
 | Charge power / Discharge power | W | Split from the signed battery power (register 1066) |
 | Grid feed-in / Grid consumption | W | Split from the signed grid power (register 1078) |
 | Charged energy | kWh | Device counter, `total_increasing`, use it as "Energy going in to the battery" |
