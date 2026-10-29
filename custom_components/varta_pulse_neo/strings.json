@@ -1,18 +1,103 @@
 {
   "config": {
+    "abort": {
+      "already_configured": "This storage system is already configured."
+    },
     "error": {
-      "cannot_connect": "Cannot connect to the Varta Pulse Neo. Check host, port, and slave ID."
+      "cannot_connect": "Cannot connect to the storage system. Check host, port and unit ID, and that Modbus TCP is enabled."
     },
     "step": {
       "user": {
-        "title": "Varta Pulse Neo",
-        "description": "Configure your Varta Pulse Neo via Modbus TCP.",
+        "title": "VARTA storage system",
+        "description": "Connect your VARTA storage system via Modbus TCP.",
         "data": {
           "host": "Host",
           "port": "Port",
-          "slave_id": "Slave ID",
+          "slave_id": "Modbus unit ID",
           "name": "Name"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the storage system.",
+          "slave_id": "VARTA recommends unit ID 255."
         }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "available_charge_power": {
+        "name": "Available AC charging power"
+      },
+      "available_discharge_power": {
+        "name": "Available AC discharging power"
+      },
+      "capacity": {
+        "name": "Installed capacity"
+      },
+      "charge_apparent_power": {
+        "name": "Charge apparent power"
+      },
+      "charge_power": {
+        "name": "Charge power"
+      },
+      "charged_energy": {
+        "name": "Charged energy"
+      },
+      "discharge_apparent_power": {
+        "name": "Discharge apparent power"
+      },
+      "discharge_power": {
+        "name": "Discharge power"
+      },
+      "discharged_energy": {
+        "name": "Discharged energy"
+      },
+      "ems_version": {
+        "name": "EMS software version"
+      },
+      "ens_version": {
+        "name": "ENS software version"
+      },
+      "grid_consumption": {
+        "name": "Grid consumption"
+      },
+      "grid_feed_in": {
+        "name": "Grid feed-in"
+      },
+      "installed_batteries": {
+        "name": "Installed battery modules"
+      },
+      "inverter_version": {
+        "name": "Inverter software version"
+      },
+      "pv_power": {
+        "name": "PV sensor power"
+      },
+      "serial": {
+        "name": "Serial number"
+      },
+      "state": {
+        "name": "State",
+        "state": {
+          "busy": "Busy",
+          "run": "Ready",
+          "charge": "Charging",
+          "discharge": "Discharging",
+          "standby": "Standby",
+          "error": "Error",
+          "passive": "Passive (service)",
+          "islanding": "Islanding",
+          "unknown": "Unknown"
+        }
+      },
+      "table_version": {
+        "name": "Modbus table version"
+      },
+      "usable_charge_energy": {
+        "name": "Usable energy for charging"
+      },
+      "usable_discharge_energy": {
+        "name": "Usable energy for discharging"
       }
     }
   }

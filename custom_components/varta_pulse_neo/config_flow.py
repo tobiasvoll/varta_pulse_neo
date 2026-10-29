@@ -1,53 +1,48 @@
 from __future__ import annotations
 
 import logging
-import voluptuous as vol
-from homeassistant import config_entries
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
+from typing import Any
 
+from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
+import voluptuous as vol
+
+from .api import VartaClient, VartaError
 from .const import CONF_SLAVE_ID, DEFAULT_NAME, DEFAULT_PORT, DEFAULT_SLAVE_ID, DOMAIN
-from .hub import VartaPulseNeoHub
 
 _LOGGER = logging.getLogger(__name__)
 
+STEP_USER_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_HOST): str,
+        vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(int, vol.Range(min=1, max=65535)),
+        vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): vol.All(int, vol.Range(min=0, max=255)),
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): str,
+    }
+)
 
-class VartaPulseNeoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+
+class VartaPulseNeoConfigFlow(ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        errors: dict[str, str] = {}
         if user_input is not None:
+            client = VartaClient(user_input[CONF_HOST], user_input[CONF_PORT], user_input[CONF_SLAVE_ID])
             try:
-                await self.hass.async_add_executor_job(
-                    VartaPulseNeoHub.validate_connection,
-                    user_input[CONF_HOST],
-                    user_input[CONF_PORT],
-                    user_input[CONF_SLAVE_ID],
-                )
-            except Exception as err:
-                _LOGGER.error(
-                    "Varta Pulse Neo connection failed: %s",
-                    err,
-                    exc_info=True,
-                )
-                return self.async_show_form(
-                    step_id="user",
-                    data_schema=self._get_schema(),
-                    errors={"base": "cannot_connect"},
-                )
+                info = await client.async_get_device_info()
+            except VartaError as err:
+                _LOGGER.debug("Connection test failed: %s", err)
+                errors["base"] = "cannot_connect"
+            else:
+                await self.async_set_unique_id(info.serial)
+                self._abort_if_unique_id_configured(updates={CONF_HOST: user_input[CONF_HOST]})
+                return self.async_create_entry(title=user_input[CONF_NAME] or DEFAULT_NAME, data=user_input)
+            finally:
+                await client.close()
 
-            return self.async_create_entry(
-                title=user_input[CONF_NAME] or DEFAULT_NAME,
-                data=user_input,
-            )
-
-        return self.async_show_form(step_id="user", data_schema=self._get_schema())
-
-    def _get_schema(self):
-        return vol.Schema(
-            {
-                vol.Required(CONF_HOST): str,
-                vol.Required(CONF_PORT, default=DEFAULT_PORT): int,
-                vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): int,
-                vol.Optional(CONF_NAME, default=DEFAULT_NAME): str,
-            }
+        return self.async_show_form(
+            step_id="user",
+            data_schema=self.add_suggested_values_to_schema(STEP_USER_SCHEMA, user_input),
+            errors=errors,
         )
