@@ -108,10 +108,14 @@ Battery at 1 % SoC, state switching between 4 (standby) and 0 (busy).
 | 2066–2086 (documented) | all 0 | no scaling on this device |
 | 2072, 2073, 2076, 2079–2082 | −1 | undocumented; 2082 must **not** be applied to the frequency |
 
-Refused with exception 2 (illegal address): 1092–1099, 1103–1110,
-2000–2065, 2068, 2070, 2087–2099, 2102–2110. A block read that contains 2068
-or 2070 failed, so the integration's current block 2066–2086 is very likely
-refused as a whole.
+Refused with exception 2 (illegal address) when read on their own: 1092–1099,
+1103–1110, 2000–2065, 2068, 2070, 2087–2099, 2102–2110.
+
+Block reads behave differently: the integration's block 2066–2086 is accepted
+(confirmed in Home Assistant, all sensors deliver values), although it contains
+2068 and 2070. Blocks that started or ended on a refused address (2068–2070,
+1000–1099, 2000–2099) were rejected. The device apparently only checks the
+first and last address of a block.
 
 ## Findings for the current code
 
@@ -119,12 +123,13 @@ refused as a whole.
    VARTA specifies, and SF 2071 is 0 on the measured device. The value is not
    constant though (5860 / 2790 Wh), so it must not be treated as a fixed
    device property.
-2. **Block reads cover refused registers.** The integration reads 2066–2086 as
-   one block, which contains the refused addresses 2068 and 2070. On the
-   measured device this block is very likely rejected, which makes every
-   sensor unavailable. Older pulse neo firmware may also refuse 1082–1087.
-   Blocks must follow the readable ranges (2066–2067, 2069, 2071–2086 here),
-   with a fallback for optional registers.
+2. **Block reads depend on undocumented behaviour.** The integration reads
+   2066–2086 as one block although 2068 and 2070 are refused on their own. It
+   works on the measured device because only the block boundaries seem to be
+   checked, but VARTA does not promise this, and older pulse neo firmware may
+   refuse 1082–1087. Blocks should start and end on documented registers, with
+   a fallback for optional registers, so one refused read does not make every
+   sensor unavailable.
 3. **Strings are one character per register.** The current decoder takes two
    bytes per register and drops the null bytes, which gives the right result,
    but it should decode the low byte only.
