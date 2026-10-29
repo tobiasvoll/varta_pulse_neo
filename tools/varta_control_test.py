@@ -9,6 +9,10 @@ its default afterwards. Nothing is written again after the first write.
 Usage:
     python3 varta_control_test.py 192.168.1.50 --limit 1000
     python3 varta_control_test.py 192.168.1.50 --limit 1000 --only discharge
+    python3 varta_control_test.py 192.168.1.50 --discharge 2500 --charge 200 --restore
+
+--discharge/--charge set each register on its own (1074 is written first).
+--restore writes the values read before the test back at the end.
 
 Stop at any time with Ctrl+C. The result is saved as JSON
 (default: varta_control_test.json). Only the Python standard library is used.
@@ -66,6 +70,9 @@ def main() -> None:
     parser.add_argument("--unit", type=int, default=255)
     parser.add_argument("--limit", type=int, default=1000, help="power limit in W (100-2500)")
     parser.add_argument("--only", choices=("discharge", "charge"))
+    parser.add_argument("--discharge", type=int, help="discharge limit in W, overrides --limit/--only")
+    parser.add_argument("--charge", type=int, help="charge limit in W, overrides --limit/--only")
+    parser.add_argument("--restore", action="store_true", help="write the original values back at the end")
     parser.add_argument("--duration", type=int, default=150, help="seconds to watch after the write")
     parser.add_argument("--output", default="varta_control_test.json")
     args = parser.parse_args()
@@ -73,10 +80,19 @@ def main() -> None:
         sys.exit("--limit must be between 100 and 2500 W")
 
     writes = []
-    if args.only != "charge":
-        writes.append((1074, -args.limit))
-    if args.only != "discharge":
-        writes.append((1075, args.limit))
+    if args.discharge is not None or args.charge is not None:
+        for name, value in (("discharge", args.discharge), ("charge", args.charge)):
+            if value is not None and not 0 <= value <= 2500:
+                sys.exit(f"--{name} must be between 0 and 2500 W")
+        if args.discharge is not None:
+            writes.append((1074, -args.discharge))
+        if args.charge is not None:
+            writes.append((1075, args.charge))
+    else:
+        if args.only != "charge":
+            writes.append((1074, -args.limit))
+        if args.only != "discharge":
+            writes.append((1075, args.limit))
 
     client = WritableModbusTcp(args.host, args.port, args.unit, 5.0)
     log: list[dict] = []
@@ -106,6 +122,14 @@ def main() -> None:
     except KeyboardInterrupt:
         print("stopped")
     finally:
+        if args.restore and log and "max_charge_1075" in log[0]:
+            original = {1074: log[0]["max_discharge_1074"], 1075: log[0]["max_charge_1075"]}
+            for address, _ in writes:
+                try:
+                    client.write_single(address, original[address])
+                    record(f"restored {address}")
+                except (ModbusError, OSError) as err:
+                    print(f"restoring {address} failed: {err}")
         client.close()
         with open(args.output, "w", encoding="utf-8") as fh:
             json.dump({"writes": writes, "log": log}, fh, indent=1)
