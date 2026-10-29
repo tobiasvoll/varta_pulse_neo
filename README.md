@@ -80,7 +80,7 @@ The manufacturer documentation recommends Modbus unit ID `255`.
 
 ```bash
 pip install -r requirements_test.txt ruff
-ruff check . && ruff format --check .
+ruff check custom_components tests && ruff format --check custom_components tests
 pytest
 ```
 
