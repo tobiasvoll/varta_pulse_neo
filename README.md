@@ -8,6 +8,8 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 - Local polling every 30 seconds over one persistent Modbus TCP connection (pymodbus)
 - Energy dashboard support: charged energy from the device counter, discharged energy integrated from the discharge power
 - Battery state as an enum sensor with translated values
+- English and German translations
+- Diagnostics download (host and serial number removed) for bug reports
 - Register map checked against the official VARTA Modbus documentation v13.4 and a real pulse neo 6 ([docs/registers.md](docs/registers.md))
 
 ## Entities
@@ -19,7 +21,7 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 | Charge power / Discharge power | W | Split from the signed battery power (register 1066) |
 | Grid feed-in / Grid consumption | W | Split from the signed grid power (register 1078) |
 | Charged energy | kWh | Device counter, `total_increasing`, use it as "Energy going in to the battery" |
-| Discharged energy | kWh | Integrated by Home Assistant from the discharge power, see below |
+| Discharged energy | kWh | Integrated by Home Assistant from the discharge power, use it as "Energy coming out of the battery", see below |
 | Installed capacity, Usable energy for charging / discharging | kWh | |
 | Available AC charging / discharging power | W | |
 | Grid frequency | Hz | |
@@ -88,4 +90,5 @@ pytest
 ## Support
 
 - Issues: https://github.com/tobiasvoll/varta_pulse_neo/issues
+- Please attach the diagnostics file: `Settings` -> `Devices & services` -> `Varta Pulse Neo` -> menu -> `Download diagnostics`. Host and serial number are removed.
 

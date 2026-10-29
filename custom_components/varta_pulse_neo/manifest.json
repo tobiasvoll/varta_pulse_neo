@@ -1,6 +1,9 @@
 {
   "domain": "varta_pulse_neo",
   "name": "Varta Pulse Neo",
+  "categories": [
+    "energy.solar_batteries"
+  ],
   "codeowners": [
     "@tobiasvoll"
   ],
