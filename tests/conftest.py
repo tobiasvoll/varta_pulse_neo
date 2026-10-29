@@ -47,12 +47,14 @@ REGISTERS: dict[int, int] = {
     1085: 5809,
     1086: 58,
     1087: 0,
+    1090: 2500,
+    1091: 2500,
     1102: 0,
     **{a: 0 for a in (2066, 2067, 2069, 2071, 2074, 2075, 2077, 2078, 2083, 2084, 2085, 2086)},
     **{a: 65535 for a in (2072, 2073, 2076, 2079, 2080, 2081, 2082)},
 }
 # Refused when read on their own; blocks are refused when they start or end on one.
-REFUSED = {2068, 2070, *range(1088, 1102)}
+REFUSED = {2068, 2070, 1088, 1089, *range(1092, 1102)}
 
 
 class FakeModbusClient:
@@ -65,6 +67,7 @@ class FakeModbusClient:
         self.strict = False  # refuse any block containing a refused address
         self.fail = False
         self.requests: list[tuple[int, int]] = []
+        self.writes: list[tuple[int, int]] = []
         self.comm_params = MagicMock(host="1.2.3.4")
 
     async def connect(self) -> bool:
@@ -85,6 +88,13 @@ class FakeModbusClient:
         result = MagicMock()
         result.isError.return_value = refused
         result.registers = [] if refused else [self.registers.get(a, 0) for a in addresses]
+        return result
+
+    async def write_register(self, address: int, value: int, *, device_id: int):
+        self.writes.append((address, value))
+        self.registers[address] = value
+        result = MagicMock()
+        result.isError.return_value = False
         return result
 
 

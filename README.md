@@ -8,6 +8,7 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 - Local polling every 30 seconds over one persistent Modbus TCP connection (pymodbus)
 - Energy dashboard support: charged energy from the device counter, discharged energy integrated from the discharge power
 - Battery state as an enum sensor with translated values
+- Charge and discharge power limits, for example to stop discharging while an EV charges
 - Register map checked against the official VARTA Modbus documentation v13.4 and a real pulse neo 6 ([docs/registers.md](docs/registers.md))
 
 ## Entities
@@ -25,8 +26,32 @@ Custom Home Assistant integration for the Varta Pulse Neo battery system via Mod
 | Grid frequency | Hz | |
 | PV sensor power | W | Only meaningful with a VARTA PV sensor |
 | Installed battery modules | | |
+| Power limit timer | s | Seconds until the device drops the current limit, disabled by default |
 | EMS, ENS and inverter software versions | | Diagnostic |
 | Charge/discharge apparent power, reactive power, Modbus table version, serial number | | Disabled by default |
+
+## Power limits
+
+Two number entities limit the battery:
+
+| Entity | Range | Effect |
+| --- | --- | --- |
+| Max charge power | 0 to rated power (W) | 0 stops charging |
+| Max discharge power | 0 to rated power (W) | 0 stops discharging |
+
+The maximum value (the rated power the device reports, 2500 W on a pulse neo 6)
+means "no limit". In that state the integration writes nothing and the battery
+runs on its own, which is the default after installation.
+
+VARTA has not documented these registers (1074/1075). The device resets a limit
+120 s after the last write, so the integration writes active limits again every
+60 s. If Home Assistant stops or loses the connection, the battery returns to
+normal operation within two minutes. Limits are restored after a restart. The
+remaining time is shown by the diagnostic sensor "Power limit timer" (disabled by
+default).
+
+The limits only cap what the battery's own energy management does; they cannot
+force the battery to charge from the grid.
 
 ### Discharged energy
 
@@ -74,6 +99,7 @@ The manufacturer documentation recommends Modbus unit ID `255`.
 
 ## Tools
 
+- `tools/varta_control_test.py`: supervised write test for the power limit registers, see [docs/registers.md](docs/registers.md).
 - `tools/varta_probe.py`: read-only register dump of a device (Python standard library only). Useful for bug reports: `python3 tools/varta_probe.py <host>`. The output contains the serial number, remove it before posting.
 
 ## Development

@@ -27,6 +27,14 @@ STATIC_BLOCK = (1000, 64)  # software versions, table version, timestamp, serial
 LIVE_BLOCK = (1064, 24)
 LIVE_FALLBACK = ((1064, 8, False), (1078, 1, False), (1082, 6, True))
 PV_BLOCK = (1102, 1)
+RATED_POWER_BLOCK = (1090, 2)  # undocumented, 2500/2500 on a pulse neo 6
+
+# Undocumented control registers (see docs/registers.md). A write starts a
+# 120 s countdown in 1073, after which the device restores its defaults.
+REG_MAX_DISCHARGE = 1074  # written negative, 0 blocks discharging
+REG_MAX_CHARGE = 1075  # 0 blocks charging
+# Never write anything else, in particular not the scale factor registers.
+WRITABLE = frozenset({REG_MAX_DISCHARGE, REG_MAX_CHARGE})
 SF_BLOCK = (2066, 21)
 SF_FALLBACK = ((2066, 2, False), (2069, 1, False), (2071, 1, False), (2078, 1, False), (2083, 4, True))
 
@@ -63,6 +71,8 @@ class VartaDeviceInfo:
     ens_version: str
     inverter_version: str
     table_version: int
+    rated_charge_power: int | None = None
+    rated_discharge_power: int | None = None
 
 
 @dataclass
@@ -84,6 +94,7 @@ class VartaData:
     usable_discharge_energy: float | None = None
     reactive_power: float | None = None
     pv_power: float | None = None
+    control_timer: int | None = None
     raw: dict[int, int] = field(default_factory=dict)
 
 
@@ -120,13 +131,7 @@ class VartaClient:
 
     async def _read(self, address: int, count: int) -> list[int]:
         """Read holding registers, honouring the request interval."""
-        if not self._client.connected:
-            if not await self._client.connect():
-                raise VartaError(f"Cannot connect to {self._client.comm_params.host}")
-        wait = self._last_request + MIN_REQUEST_INTERVAL - time.monotonic()
-        if wait > 0:
-            await asyncio.sleep(wait)
-        self._last_request = time.monotonic()
+        await self._connect_and_wait()
         try:
             result = await self._client.read_holding_registers(address, count=count, device_id=self._unit_id)
         except ModbusException as err:
@@ -135,6 +140,15 @@ class VartaClient:
         if result.isError():
             raise VartaRefused(address, count)
         return list(result.registers)
+
+    async def _connect_and_wait(self) -> None:
+        if not self._client.connected:
+            if not await self._client.connect():
+                raise VartaError(f"Cannot connect to {self._client.comm_params.host}")
+        wait = self._last_request + MIN_REQUEST_INTERVAL - time.monotonic()
+        if wait > 0:
+            await asyncio.sleep(wait)
+        self._last_request = time.monotonic()
 
     async def _read_blocks(
         self, block: tuple[int, int], fallback: tuple[tuple[int, int, bool], ...], use_fallback: bool
@@ -162,13 +176,47 @@ class VartaClient:
     async def async_get_device_info(self) -> VartaDeviceInfo:
         async with self._lock:
             regs = await self._read(*STATIC_BLOCK)
+            try:
+                rated = await self._read(*RATED_POWER_BLOCK)
+            except VartaRefused:
+                rated = [None, None]
         return VartaDeviceInfo(
             ems_version=decode_string(regs[0:17]),
             ens_version=decode_string(regs[17:34]),
             inverter_version=decode_string(regs[34:51]),
             table_version=regs[51],
             serial=decode_string(regs[54:64]),
+            rated_charge_power=rated[0] or None,
+            rated_discharge_power=rated[1] or None,
         )
+
+    async def async_set_power_limits(self, charge: int | None = None, discharge: int | None = None) -> None:
+        """Write the maximum charge and/or discharge power in W (both positive).
+
+        The limits hold for 120 s and have to be written again before then.
+        """
+        writes = []
+        if discharge is not None:
+            writes.append((REG_MAX_DISCHARGE, -discharge))
+        if charge is not None:
+            writes.append((REG_MAX_CHARGE, charge))
+        async with self._lock:
+            for address, value in writes:
+                await self._write(address, value)
+
+    async def _write(self, address: int, value: int) -> None:
+        if address not in WRITABLE:
+            raise ValueError(f"Register {address} must not be written")
+        if not -0x8000 <= value <= 0x7FFF:
+            raise ValueError(f"Value {value} out of range")
+        await self._connect_and_wait()
+        try:
+            result = await self._client.write_register(address, value & 0xFFFF, device_id=self._unit_id)
+        except ModbusException as err:
+            self._client.close()
+            raise VartaError(f"Writing register {address} failed: {err}") from err
+        if result.isError():
+            raise VartaRefused(address, 1)
 
     async def async_get_data(self) -> VartaData:
         async with self._lock:
@@ -217,6 +265,8 @@ class VartaClient:
             data.usable_charge_energy = scaled(v, sf.get(2085))
         if (v := get(1086)) is not None:
             data.usable_discharge_energy = scaled(v, sf.get(2086))
+        if (v := get(1073)) is not None:
+            data.control_timer = to_int16(v)
         if (v := get(1087)) is not None:
             data.reactive_power = float(to_int16(v))
         if (v := get(1102)) is not None:

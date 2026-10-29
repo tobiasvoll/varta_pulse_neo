@@ -9,7 +9,7 @@ from .const import CONF_SLAVE_ID, DOMAIN
 from .coordinator import VartaConfigEntry, VartaCoordinator
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
-PLATFORMS = [Platform.SENSOR]
+PLATFORMS = [Platform.NUMBER, Platform.SENSOR]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: VartaConfigEntry) -> bool:
