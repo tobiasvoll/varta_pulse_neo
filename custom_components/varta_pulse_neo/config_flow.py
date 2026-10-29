@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_PORT
 import voluptuous as vol
 
 from .api import VartaClient, VartaError
@@ -17,7 +17,6 @@ STEP_USER_SCHEMA = vol.Schema(
         vol.Required(CONF_HOST): str,
         vol.Required(CONF_PORT, default=DEFAULT_PORT): vol.All(int, vol.Range(min=1, max=65535)),
         vol.Required(CONF_SLAVE_ID, default=DEFAULT_SLAVE_ID): vol.All(int, vol.Range(min=0, max=255)),
-        vol.Optional(CONF_NAME, default=DEFAULT_NAME): str,
     }
 )
 
@@ -37,7 +36,7 @@ class VartaPulseNeoConfigFlow(ConfigFlow, domain=DOMAIN):
             else:
                 await self.async_set_unique_id(info.serial)
                 self._abort_if_unique_id_configured(updates={CONF_HOST: user_input[CONF_HOST]})
-                return self.async_create_entry(title=user_input[CONF_NAME] or DEFAULT_NAME, data=user_input)
+                return self.async_create_entry(title=DEFAULT_NAME, data=user_input)
             finally:
                 await client.close()
 

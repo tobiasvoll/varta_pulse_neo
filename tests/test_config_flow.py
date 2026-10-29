@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from homeassistant.config_entries import SOURCE_USER
-from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT
+from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 
 from custom_components.varta_pulse_neo.const import CONF_SLAVE_ID, DOMAIN
 
-USER_INPUT = {CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_SLAVE_ID: 255, CONF_NAME: "Speicher"}
+USER_INPUT = {CONF_HOST: "1.2.3.4", CONF_PORT: 502, CONF_SLAVE_ID: 255}
 
 
 async def test_user_flow(hass: HomeAssistant, fake_client) -> None:
@@ -15,7 +15,7 @@ async def test_user_flow(hass: HomeAssistant, fake_client) -> None:
     assert result["type"] is FlowResultType.FORM
     result = await hass.config_entries.flow.async_configure(result["flow_id"], USER_INPUT)
     assert result["type"] is FlowResultType.CREATE_ENTRY
-    assert result["title"] == "Speicher"
+    assert result["title"] == "Varta Pulse Neo"
     assert result["result"].unique_id == "123456789"
 
 
